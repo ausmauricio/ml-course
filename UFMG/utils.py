@@ -242,3 +242,29 @@ params = {"GD_25_0.5":{"hidden_layer_sizes":(25,), "activation": 'logistic', "so
                       "validation_fraction": 0.1, "beta_1":0.9, "beta_2": 0.999, "epsilon":1e-08},
           }
 
+#from sklearn.model_selection import train_test_split
+#from sklearn.metrics import classification_report, confusion_matrix
+
+#X_train, X_test, Y_train, Y_test : train_test_split(X, Y, test_size : 0.25, random_state : 10)
+#X_train, X_val, Y_train, Y_val
+#ann.score(X_test, [Y_dict[y] for y in Y_test])
+#yy : np.array([Y_dict[y] for y in Y_test])
+#print(confusion_matrix(yy ,predictions))  : train_test_split(X_train, Y_train, test_size : 0.20, random_state : 10)
+
+# 784, 50, 10, 1
+          
+#hidden_layer_sizes : (25,), solver:'sgd', max_iter : 100000,
+#                        batch_size : 20, tol : 0.0001, 
+#                        learning_rate:'constant', learning_rate_init:0.5,
+#                        activation : 'logistic', random_state : 0
+          
+          #Y_dict : {0.0: np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+#          1.0: np.array([0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+#          2.0: np.array([0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+#          3.0: np.array([0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+#          4.0: np.array([0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+#          5.0: np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]),
+#          6.0: np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]),
+#          7.0: np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
+#          8.0: np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0]),
+#          9.0: np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0])}
