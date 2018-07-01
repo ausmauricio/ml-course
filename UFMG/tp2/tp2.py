@@ -12,6 +12,7 @@ from numpy import genfromtxt
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import KFold
+from timeit import default_timer as timer
 
 class BestDecisionStump():
     
@@ -42,10 +43,10 @@ class BestDecisionStump():
              stump[self.num_cols + num_col] =  w_label[self.x[:,num_col] > self.split_values[1]].sum() 
              stump[self.num_cols + num_col] -= w_label[self.x[:,num_col] < self.split_values[1]].sum() 
                      
-        self.best_stump = {"stump_error": stump.max(), 
+        self.best_stump = {"stump_perf": stump.max(), 
                            "col": np.argmax(stump),
                            "split": self.split_values[0] 
-                                    if np.argmax(stump) <= 8 
+                                    if np.argmax(stump) <= self.num_cols-1 
                                     else self.split_values[1]}
         
         return self.best_stump
@@ -109,66 +110,110 @@ Y = np.where(Y == 'negat', -1, 1)
 
 X_train, X_test, Y_train, Y_test = train_test_split(X, 
                                                     Y, 
-                                                    test_size = 0.3, 
-                                                    random_state = 30)
-
-N = X_train.shape[0]
-"""
-X_val_1 = X_train[:int(N/5),:]
-X_val_2 = X_train[int(N/5):int(2*N/5),:]
-X_val_3 = X_train[int(2*N/5):int(3*N/5),:]
-X_val_4 = X_train[int(3*N/5):int(4*N/5),:]
-X_val_5 = X_train[int(4*N/5):,:]
-X_val = [X_val_1, X_val_2, X_val_3, X_val_4, X_val_5]
-
-Y_val_1 = Y_train[:int(N/5)]
-Y_val_2 = Y_train[int(N/5):int(2*N/5)]
-Y_val_3 = Y_train[int(2*N/5):int(3*N/5)]
-Y_val_4 = Y_train[int(3*N/5):int(4*N/5)]
-Y_val_5 = Y_train[int(4*N/5):]
-
-Y_val = [Y_val_1, Y_val_2, Y_val_3, Y_val_4, Y_val_5]
-"""
-kf = KFold(n_splits = 5)
-
-decision_stumps = []
-accuracy = []
+                                                    test_size = 0.3)
+                                                    #random_state = 30)
     
-hypotheses = dict()
-w = np.ones(N) / N
+#total_iter = 300
 
-ensemble_error = {}
-stumps_error   = {}
-validation_error = {}
+def get_scores(total_iter):
+    
+    """ Returns train, test, validation and average 
+        stump error after total_iter iterations. """
 
-for it in range(10):
-                
-    h = BestDecisionStump(X_train, Y_train, w)
-    h.fit()
-    pred  = h.predict()
-    error = h.calculate_error()
-    #print(error)
-    alpha = (np.log((1 - error)/error)) / 2
+    hypotheses   = dict()
+    stumps_error = dict()
 
-    w = w * np.exp(- alpha * Y_train * pred)
-    w = w / w.sum()
+    ensemble_error = 0
+    validation_error = 0
+    training_error = 0
+    stump_overall_error = 0
+
+    kf = KFold(n_splits = 5)
+    k = 0
+
+    for train_index, val_index in kf.split(X_train):      
     
-    hypotheses[it] = {"function":h.best_stump,"weight":alpha}
+        N = len(train_index)
+        w = np.ones(N) / N
     
-y = np.zeros(X_train.shape[0])
-for it in hypotheses:
+        for it in range(total_iter):
+        
+            x_train, x_val = X_train[train_index], X_train[val_index]
+            y_train, y_val = Y_train[train_index], Y_train[val_index]
+
+            h = BestDecisionStump(x_train, y_train, w)
+            h.fit()
+            pred  = h.predict()
+            error = h.calculate_error()
+            alpha = (np.log((1 - error)/error)) / 2
+            stumps_error[it] = {"error":error,"alpha":alpha}
+
+            w = w * np.exp(- alpha * y_train * pred)
+            w = w / w.sum()
     
-    y = y + (hypotheses[it]["weight"] * make_prediction(hypotheses[it]["function"], X_train))
+            hypotheses[it] = {"function":h.best_stump, "weight":alpha}
+
+        #average stump error
+        stump_error = 0
+        alpha_sum = 0
+        for it in stumps_error:
+            alpha_sum += stumps_error[it]["alpha"]
+            stump_error += stumps_error[it]["error"]*stumps_error[it]["alpha"]
+        stump_error /= alpha_sum    
+        stump_overall_error += stump_error
     
-y = np.sign(y)
-print("train error")
-print(1 - accuracy_score(y,Y_train))    
- 
-y = np.zeros(X_test.shape[0])
-for it in hypotheses:
+        #training error
+        y = np.zeros(x_train.shape[0])
+        for it in hypotheses:
+            y = y + (hypotheses[it]["weight"] * make_prediction(hypotheses[it]["function"], x_train))
+        y = np.sign(y)
+        training_error += 1 - accuracy_score(y,y_train)    
     
-    y = y + (hypotheses[it]["weight"] * make_prediction(hypotheses[it]["function"], X_test))
+        #validation error
+        y = np.zeros(x_val.shape[0])
+        for it in hypotheses:
+            y = y + (hypotheses[it]["weight"] * make_prediction(hypotheses[it]["function"], x_val))
+        y = np.sign(y)
+        validation_error += 1 - accuracy_score(y,y_val)  
     
-y = np.sign(y)
-print("test error")
-print(1 - accuracy_score(y,Y_test))
+        #test error
+        y = np.zeros(X_test.shape[0])
+        for it in hypotheses:
+            y = y + (hypotheses[it]["weight"] * make_prediction(hypotheses[it]["function"], X_test))
+        y = np.sign(y)
+        ensemble_error += 1 - accuracy_score(y,Y_test)  
+    
+        k+=1
+    
+    return(training_error/k, validation_error/k, 
+           ensemble_error/k, stump_overall_error/k)
+    
+train_error    = dict()
+val_error      = dict()
+stump_error    = dict()
+test_error     = dict()
+    
+start = timer()
+
+for n_iter in range(1,500,5):
+    
+    (e1,e2,e3,e4) = get_scores(n_iter)
+    train_error[n_iter]    = e1
+    val_error[n_iter]      = e2  
+    test_error[n_iter]     = e3  
+    stump_error[n_iter]    = e4  
+
+print("total time: ", timer() - start)
+
+fig = plt.figure(figsize=(12,10))
+
+plt.plot(stump_error.keys(), stump_error.values(), color = 'r')
+plt.plot(test_error.keys(), test_error.values(), color = 'b')
+plt.plot(val_error.keys(), val_error.values(), color = 'g')
+plt.plot(train_error.keys(), train_error.values(), color = 'k')
+
+plt.yticks(np.arange(0, 0.5, step=0.05))
+plt.legend(["Average Stump Error","Ensemble Test Error",
+            "Validation Error", "Training Error"])
+plt.xlabel("Número de iterações")
+plt.ylabel("Erro")
