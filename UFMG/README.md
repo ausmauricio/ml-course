@@ -1,4 +1,5 @@
-# Trabalhos ML
+# Assignments
 
-TP1 - Redes Neurais
-TP2 - Implementação Boosting
+TP1 - Redes Neurais (Neural Networks)
+
+TP2 - Implementação Boosting (Adaboost Implementation)

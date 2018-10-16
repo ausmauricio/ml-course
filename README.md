@@ -1,3 +1,3 @@
-#ML
+#Machine Learning
 
-UFMG: Cursos UFMG
+UFMG: Curso de pós graduação UFMG
